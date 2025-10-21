@@ -1,4 +1,7 @@
+const path = require('path');
 const express = require('express');
+// This serves all the files in the 'public' folder
+app.use(express.static(path.join(__dirname, '../public')));
 const fs = require('fs');
 const path = require('path');
 const app = express();
@@ -91,4 +94,10 @@ app.delete('/students/:id', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// This "catch-all" route must be at the end.
+// It sends your index.html file for any request that doesn't match an API route.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
