@@ -1,28 +1,34 @@
-const path = require('path');
 const express = require('express');
-// This serves all the files in the 'public' folder
-app.use(express.static(path.join(__dirname, '../public')));
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
+
 const app = express();
-const PORT = 3000;
+
 const DATA_FILE = path.join(__dirname, 'students.json');
 const CSV_FILE = path.join(__dirname, '../students_data_2.0.csv');
 
-app.use(express.json());
+// --- Middleware ---
+// This serves static files from the 'public' folder
 app.use(express.static(path.join(__dirname, '../public')));
+// This allows the server to understand JSON
+app.use(express.json());
 
+
+// --- Data Functions ---
 function readStudents() {
   if (!fs.existsSync(DATA_FILE)) return [];
-  const data = fs.readFileSync(DATA_FILE);
-  return JSON.parse(data);
+  try {
+    const data = fs.readFileSync(DATA_FILE);
+    return JSON.parse(data);
+  } catch (error) {
+    return [];
+  }
 }
 
 function writeStudents(students) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(students, null, 2));
 }
 
-// Function to import CSV data
 function importCSV() {
   if (!fs.existsSync(CSV_FILE)) {
     console.log('CSV file not found');
@@ -61,6 +67,8 @@ if (readStudents().length === 0) {
   importCSV();
 }
 
+
+// --- API Routes ---
 app.get('/students', (req, res) => {
   res.json(readStudents());
 });
@@ -68,7 +76,6 @@ app.get('/students', (req, res) => {
 app.post('/students', (req, res) => {
   const students = readStudents();
   const student = req.body;
-  // Basic validation
   if (!student.id || !student.name || !student.gender || !student.gmail || !student.program || !student.year || !student.university) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
@@ -92,12 +99,15 @@ app.delete('/students/:id', (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
 
-// This "catch-all" route must be at the end.
-// It sends your index.html file for any request that doesn't match an API route.
+// --- Catch-all Route ---
+// This sends the index.html file for any request that doesn't match an API route.
+// This MUST be the last route.
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
+
+
+// --- Vercel Export ---
+// This is the line that Vercel needs to run your server.
+module.exports = app;
