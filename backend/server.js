@@ -1,4 +1,4 @@
-require('dotenv').config(); // <-- FIX 1: Loads .env file
+require('dotenv').config(); // Loads .env file
 const express = require('express');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
@@ -29,7 +29,7 @@ app.get('/students', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
     const { data, error } = await supabase
-      .from('students')
+      .from('student') // Using 'student' table
       .select('*');
 
     if (error) throw error;
@@ -51,7 +51,7 @@ app.post('/students', async (req, res) => {
 
   try {
     const { data: existing, error: selectError } = await supabase
-      .from('students')
+      .from('student') // Using 'student' table
       .select('id')
       .eq('id', student.id)
       .maybeSingle();
@@ -62,7 +62,7 @@ app.post('/students', async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('students')
+      .from('student') // Using 'student' table
       .insert([
         {
           id: student.id,
@@ -81,7 +81,7 @@ app.post('/students', async (req, res) => {
     res.status(201).json(data);
   } catch (error) {
     console.error('Error adding student:', error.message);
-    if (error.code === '23505') {
+    if (error.code === '23505') { // Postgres duplicate key error
         res.status(400).json({ error: 'Student ID already exists (database constraint).' });
     } else {
         res.status(500).json({ error: 'Failed to add student' });
@@ -96,7 +96,7 @@ app.delete('/students/:id', async (req, res) => {
 
   try {
     const { error, count } = await supabase
-      .from('students')
+      .from('student') // Using 'student' table
       .delete()
       .eq('id', idToDelete);
 
@@ -110,6 +110,9 @@ app.delete('/students/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete student' });
   }
 });
+
+// --- Note: The catch-all route was removed ---
+// app.use(express.static) handles serving index.html
 
 
 // --- Start the Server (for local testing) ---
