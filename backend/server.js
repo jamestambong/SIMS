@@ -3,24 +3,25 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
+const PORT = process.env.PORT || 3000; // Vercel uses its own port, 3000 is for local
 
 const DATA_FILE = path.join(__dirname, 'students.json');
 const CSV_FILE = path.join(__dirname, '../students_data_2.0.csv');
 
 // --- Middleware ---
-// This serves static files from the 'public' folder
-app.use(express.static(path.join(__dirname, '../public')));
-// This allows the server to understand JSON
+// These lines must come before your routes
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '../public')));
 
 
-// --- Data Functions ---
+// --- Data Functions (No changes needed here) ---
 function readStudents() {
   if (!fs.existsSync(DATA_FILE)) return [];
   try {
     const data = fs.readFileSync(DATA_FILE);
     return JSON.parse(data);
   } catch (error) {
+    console.error("Error reading or parsing students.json:", error);
     return [];
   }
 }
@@ -68,7 +69,7 @@ if (readStudents().length === 0) {
 }
 
 
-// --- API Routes ---
+// --- API Routes (No changes needed here) ---
 app.get('/students', (req, res) => {
   res.json(readStudents());
 });
@@ -101,13 +102,19 @@ app.delete('/students/:id', (req, res) => {
 
 
 // --- Catch-all Route ---
-// This sends the index.html file for any request that doesn't match an API route.
-// This MUST be the last route.
-app.get('*', (req, res) => {
+// This sends the index.html for any request that doesn't match an API route.
+// This MUST come AFTER your API routes but BEFORE app.listen().
+app.get('/', (req, res) => { // <-- USE JUST '/'
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 
+// --- Start the Server ---
+// This part is for your local computer. Vercel will ignore it.
+app.listen(PORT, () => {
+  console.log(`✅ Server is running on http://localhost:${PORT}`);
+});
+
 // --- Vercel Export ---
-// This is the line that Vercel needs to run your server.
+// This is the part that Vercel uses.
 module.exports = app;
