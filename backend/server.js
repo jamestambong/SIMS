@@ -1,120 +1,143 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js'); // Import Supabase
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Vercel uses its own port, 3000 is for local
+const PORT = process.env.PORT || 3000;
 
-const DATA_FILE = path.join(__dirname, 'students.json');
-const CSV_FILE = path.join(__dirname, '../students_data_2.0.csv');
+// --- Supabase Setup ---
+// Get these from your Vercel Environment Variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+// Check if environment variables are loaded
+if (!supabaseUrl || !supabaseKey) {
+  console.error("Error: SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required.");
+  // Optionally exit or handle this error appropriately in production
+  // process.exit(1); // Exit if critical variables are missing
+}
+
+// Initialize Supabase client only if keys exist
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
+
 
 // --- Middleware ---
-// These lines must come before your routes
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 
-// --- Data Functions (No changes needed here) ---
-function readStudents() {
-  if (!fs.existsSync(DATA_FILE)) return [];
+// --- API Routes (Using Supabase) ---
+
+// GET all students
+app.get('/students', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   try {
-    const data = fs.readFileSync(DATA_FILE);
-    return JSON.parse(data);
+    const { data, error } = await supabase
+      .from('students')
+      .select('*'); // Select all columns
+
+    if (error) throw error;
+    res.json(data);
   } catch (error) {
-    console.error("Error reading or parsing students.json:", error);
-    return [];
+    console.error('Error fetching students:', error.message);
+    res.status(500).json({ error: 'Failed to fetch students' });
   }
-}
-
-function writeStudents(students) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(students, null, 2));
-}
-
-function importCSV() {
-  if (!fs.existsSync(CSV_FILE)) {
-    console.log('CSV file not found');
-    return;
-  }
-  const csvData = fs.readFileSync(CSV_FILE, 'utf8');
-  const lines = csvData.split('\n').filter(line => line.trim());
-  const students = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    
-    const parts = line.split(',');
-    if (parts.length >= 7) {
-      students.push({
-        id: parts[0].trim(),
-        name: parts[1].trim(),
-        gender: parts[2].trim(),
-        gmail: parts[3].trim(),
-        program: parts[4].trim(),
-        year: parts[5].trim().replace(/\D/g, '') || '1',
-        university: parts[6].trim()
-      });
-    }
-  }
-  
-  if (students.length > 0) {
-    writeStudents(students);
-    console.log(`Imported ${students.length} students from CSV`);
-  }
-}
-
-// Import CSV on startup if students.json is empty
-if (readStudents().length === 0) {
-  importCSV();
-}
-
-
-// --- API Routes (No changes needed here) ---
-app.get('/students', (req, res) => {
-  res.json(readStudents());
 });
 
-app.post('/students', (req, res) => {
-  const students = readStudents();
+// POST a new student
+app.post('/students', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
   const student = req.body;
+
+  // Basic validation (keep this)
   if (!student.id || !student.name || !student.gender || !student.gmail || !student.program || !student.year || !student.university) {
     return res.status(400).json({ error: 'All fields are required.' });
   }
-  if (students.find(s => s.id === student.id)) {
-    return res.status(400).json({ error: 'Student ID already exists.' });
+
+  try {
+    // Check if ID already exists
+    const { data: existing, error: selectError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('id', student.id) // Check if 'id' equals student.id
+      .maybeSingle(); // Returns one row or null
+
+    if (selectError) throw selectError;
+    if (existing) {
+      return res.status(400).json({ error: 'Student ID already exists.' });
+    }
+
+    // Insert new student
+    const { data, error } = await supabase
+      .from('students')
+      .insert([ // Supabase expects an array for inserts
+        {
+          id: student.id,
+          name: student.name,
+          gender: student.gender,
+          gmail: student.gmail,
+          program: student.program,
+          // Ensure year is an integer
+          year: parseInt(student.year) || 1, // Default to 1 if conversion fails
+          university: student.university
+        }
+      ])
+      .select() // Return the inserted data
+      .single(); // Expecting only one row back
+
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (error) {
+    console.error('Error adding student:', error.message);
+    // More specific error handling based on Supabase error codes if needed
+    if (error.code === '23505') { // Unique constraint violation (likely ID)
+        res.status(400).json({ error: 'Student ID already exists (database constraint).' });
+    } else {
+        res.status(500).json({ error: 'Failed to add student' });
+    }
   }
-  students.push(student);
-  writeStudents(students);
-  res.status(201).json(student);
 });
 
-app.delete('/students/:id', (req, res) => {
-  let students = readStudents();
-  const id = req.params.id;
-  const initialLength = students.length;
-  students = students.filter(s => s.id !== id);
-  if (students.length === initialLength) {
-    return res.status(404).json({ error: 'Student not found.' });
+// DELETE a student by ID
+app.delete('/students/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase client not initialized.' });
+  const idToDelete = req.params.id;
+
+  try {
+    const { data, error, count } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', idToDelete); // Match the 'id' column
+
+    if (error) throw error;
+
+    // Check if any rows were actually deleted
+    if (count === 0) {
+       return res.status(404).json({ error: 'Student not found.' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting student:', error.message);
+    res.status(500).json({ error: 'Failed to delete student' });
   }
-  writeStudents(students);
-  res.json({ success: true });
 });
 
 
 // --- Catch-all Route ---
-// This sends the index.html for any request that doesn't match an API route.
-// This MUST come AFTER your API routes but BEFORE app.listen().
-app.get('/', (req, res) => { // <-- USE JUST '/'
+// Sends index.html for any other requests (like page loads)
+app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
 
 
-// --- Start the Server ---
-// This part is for your local computer. Vercel will ignore it.
+// --- Start the Server (for local testing) ---
 app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
+  if (!supabase) {
+    console.warn("⚠️ Supabase client not initialized. Check environment variables for local testing.");
+  }
 });
 
 // --- Vercel Export ---
-// This is the part that Vercel uses.
 module.exports = app;
