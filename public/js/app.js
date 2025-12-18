@@ -1,14 +1,17 @@
 import { API } from './api.js';
 import { UI } from './ui.js';
 
-console.log("App.js is starting NOW!"); 
+console.log("🚀 App.js is starting NOW!"); 
 
 let allStudents = [];
 let studentToDelete = null;
 let currentPage = 1;
 
-loadStudents();
-setupEventListeners();
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    loadStudents();
+    setupEventListeners();
+});
 
 // --- Core Logic ---
 async function loadStudents() {
@@ -82,6 +85,7 @@ function setupEventListeners() {
     // 5. Modal & Delete Actions
     document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
     
+    // Global helpers for UI.js if needed
     window.hideDeleteModal = () => UI.toggleModal(false);
     window.hideNotification = () => UI.hideNotification();
 
@@ -177,13 +181,12 @@ async function handleChat() {
     }
 }
 
-// --- Filter & Pagination ---
+// --- Filter & Pagination Logic ---
 function applyFilters() {
     const searchEl = document.getElementById('search');
     const genderEl = document.getElementById('filterGender');
     const yearEl = document.getElementById('filterYear');
     
-    // Safety check if elements exist
     if (!searchEl || !genderEl || !yearEl) return;
 
     const search = searchEl.value.toLowerCase();
