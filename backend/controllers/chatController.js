@@ -1,54 +1,50 @@
-const groq = require('../config/groq');
+// backend/controllers/chatController.js
+const genAI = require('../config/gemini'); // Import the new config
 const supabase = require('../config/supabase');
 
 exports.handleChat = async (req, res) => {
   try {
-    const { prompt } = req.body; 
+    const { prompt } = req.body;
 
-    // 1. FETCH LIVE DATA
-    // We query Supabase right now. This ensures the data is 100% fresh.
-    // If you added a student 1 second ago, this line grabs them.
+    if (!prompt) {
+        return res.status(400).json({ reply: "Please type a message." });
+    }
+
     const { data: student, error } = await supabase
-        .from('student') 
-        .select('*'); // Grab everything for now
+        .from('student')
+        .select('*');
 
     if (error) {
         console.error("Supabase Error:", error);
-        return res.status(500).json({ reply: "Database error." });
+        return res.status(500).json({ reply: "Database connection failed." });
     }
 
-    // 2. CLEAN THE LIVE DATA (The "Compression")
-    // We are NOT using old data. We are taking the FRESH 'students' list 
-    // and just removing the junk that makes the AI crash.
-    const cleanData = student.map(s => {
-        // We create a simple sentence for each student.
-        // NOTE: Make sure 'name', 'course', 'year' match your actual database columns!
-        // If your column is 'student_name', change s.name to s.student_name below.
-        return `Name: ${s.name || s.student_name || 'Unknown'}, Course: ${s.course || s.program || 'N/A'}, Year: ${s.level || s.year || 'N/A'}`;
-    }).join("; ");
+    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-    console.log(`Sending fresh data for ${student.length} student...`);
+    const fullPrompt = `
+      You are a helpful school registrar assistant for "SIMS".
+      
+      Here is the LIVE student database:
+      ${JSON.stringify(student, null, 2)}
 
-    // 3. SEND TO GROQ (Big Model)
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        { 
-          role: "system", 
-          // We inject the CLEAN string into the system prompt
-          content: `You are a helpful school registrar. Here is the LIVE database of students: [${cleanData}]. Use this to answer questions.` 
-        },
-        { role: "user", content: prompt }
-      ],
-      model: "llama-3.3-70b-versatile",
-    });
+      INSTRUCTIONS:
+      - Answer the user's question based ONLY on the data above.
+      - If the student is not in the list, say "I cannot find that student."
+      - Be polite and concise.
 
-    res.json({ reply: chatCompletion.choices[0]?.message?.content });
+      USER QUESTION:
+      "${prompt}"
+    `;
+
+    //Generate Answer
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const text = response.text();
+
+    res.json({ reply: text });
 
   } catch (error) {
-    console.error("Groq Error:", error);
-    if (error.status === 429) {
-        return res.status(429).json({ reply: "⚠️ Daily Limit Reached. The 70b model is too busy/expensive. Try again in 1 hour." });
-    }
+    console.error("Gemini Error:", error);
     res.status(500).json({ reply: "Server Error" });
   }
 };

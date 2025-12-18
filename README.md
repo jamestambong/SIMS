@@ -32,7 +32,7 @@
 * **Frontend:** HTML5, CSS3 (Custom + Tailwind Utility Classes), Vanilla JavaScript (ES6 Modules)
 * **Backend:** Node.js, Express.js
 * **Database:** Supabase (PostgreSQL)
-* **AI Integration:** Groq SDK (`llama-3.3-70b-versatile`)
+* **AI Integration:** Gemini Ai (`gemini-3-flash-preview`)
 * **Icons:** FontAwesome 6
 
 ---
