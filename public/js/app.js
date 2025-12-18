@@ -7,23 +7,14 @@ let allStudents = [];
 let studentToDelete = null;
 let currentPage = 1;
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    loadStudents();
-    setupEventListeners();
-});
+loadStudents();
+setupEventListeners();
 
 // --- Core Logic ---
 async function loadStudents() {
     console.log("🔄 Fetching student data...");
     allStudents = await API.fetchStudents();
     
-    // Safety check: Ensure API returns an array
-    if (!Array.isArray(allStudents)) {
-        console.error("Data is not an array:", allStudents);
-        allStudents = [];
-    }
-
     if(UI.elements.totalCount) UI.elements.totalCount.textContent = allStudents.length;
     applyFilters(); 
 }
@@ -64,11 +55,11 @@ function setupEventListeners() {
         const el = document.getElementById(id);
         if(el) {
             el.addEventListener('input', () => {
-                currentPage = 1; 
+                currentPage = 1; // Reset to page 1 on search
                 applyFilters();
             });
             el.addEventListener('change', () => {
-                currentPage = 1; 
+                currentPage = 1; // Reset to page 1 on sort/filter change
                 applyFilters();
             });
         }
@@ -85,21 +76,17 @@ function setupEventListeners() {
     // 5. Modal & Delete Actions
     document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
     
-    // Global helpers for UI.js if needed
     window.hideDeleteModal = () => UI.toggleModal(false);
     window.hideNotification = () => UI.hideNotification();
 
-    const tableBody = document.querySelector('#studentsTable tbody');
-    if (tableBody) {
-        tableBody.addEventListener('click', (e) => {
-            const btn = e.target.closest('.btn-icon-delete');
-            if (btn) {
-                const id = btn.getAttribute('data-id');
-                studentToDelete = allStudents.find(s => s.id === id);
-                if (studentToDelete) UI.toggleModal(true, studentToDelete);
-            }
-        });
-    }
+    document.querySelector('#studentsTable tbody').addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-icon-delete');
+        if (btn) {
+            const id = btn.getAttribute('data-id');
+            studentToDelete = allStudents.find(s => s.id === id);
+            if (studentToDelete) UI.toggleModal(true, studentToDelete);
+        }
+    });
 }
 
 // --- Handlers ---
@@ -155,21 +142,33 @@ async function handleChat() {
     input.value = '';
     UI.addChatMessage('Generating...', 'bot');
     
+    // 1. PREPARE DATA 
     const formattedData = allStudents.map((s, index) => 
         `${index + 1}. [${s.id}] ${s.name} (${s.gender}) - ${s.program} - Year ${s.year} - ${s.university}`
     ).join('\n');
 
     const total = allStudents.length;
 
+    // 2. THE PROMPT
     const smartPrompt = `
-      [ROLE] You are an expert Data Analyst.
-      [DATABASE] Total Records: ${total}
-      [DATA LIST]
+      [ROLE]
+      You are an expert Data Analyst.
+      
+      [DATABASE]
+      Total Records: ${total}
+      
+      [DATA LIST START]
       ${formattedData}
-      [USER QUESTION] "${message}"
+      [DATA LIST END]
+      
+      [USER QUESTION]
+      "${message}"
+      
       [INSTRUCTIONS]
-      - Use the provided data to answer.
-      - If searching for a name, be precise.
+      - The data above is the COMPLETE list of students.
+      - Read every single line carefully.
+      - If asking for a specific student (like "Imee"), find their numbered row and recite the details.
+      - Do not summarize unless asked. Be precise.
     `;
     
     try {
@@ -177,28 +176,24 @@ async function handleChat() {
         UI.addChatMessage(data.reply, 'bot');
     } catch (err) {
         console.error(err);
-        UI.addChatMessage("⚠️ Connection Error. Please try again.", 'bot');
+        UI.addChatMessage("⚠️ Rate Limit Hit. (Tip: Create a new API Key to fix this immediately)", 'bot');
     }
 }
 
-// --- Filter & Pagination Logic ---
+// --- Filter & Pagination Logic
 function applyFilters() {
-    const searchEl = document.getElementById('search');
-    const genderEl = document.getElementById('filterGender');
-    const yearEl = document.getElementById('filterYear');
+    const search = document.getElementById('search').value.toLowerCase();
+    const gender = document.getElementById('filterGender').value;
+    const year = document.getElementById('filterYear').value;
     
-    if (!searchEl || !genderEl || !yearEl) return;
-
-    const search = searchEl.value.toLowerCase();
-    const gender = genderEl.value;
-    const year = yearEl.value;
-    
+    // 1. Filter Data
     let filtered = allStudents.filter(s => {
         return (s.name.toLowerCase().includes(search) || s.program.toLowerCase().includes(search)) &&
                (gender === '' || s.gender === gender) &&
                (year === '' || s.year.toString() === year);
     });
 
+    // 2. Sort Data
     const sortBy = document.getElementById('sortBy').value;
     const [field, order] = sortBy.split('-');
     
@@ -213,25 +208,32 @@ function applyFilters() {
         return 0;
     });
 
+    // 3. Pagination Logic
     const itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
     const totalItems = filtered.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+    // Safety checks
     if (currentPage > totalPages) currentPage = 1;
     if (currentPage < 1 && totalPages > 0) currentPage = 1;
 
+    // Calculate Slice indices
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     
+    // 4. Render Table (Sliced data)
     UI.renderTable(filtered.slice(startIndex, endIndex));
 
+    // 5. Update Text
+    const startDisplay = totalItems === 0 ? 0 : startIndex + 1;
+    const endDisplay = Math.min(startIndex + itemsPerPage, totalItems);
+    
     const pageInfo = document.getElementById('pageInfo');
     if (pageInfo) {
-        const startDisplay = totalItems === 0 ? 0 : startIndex + 1;
-        const endDisplay = Math.min(startIndex + itemsPerPage, totalItems);
         pageInfo.textContent = `${startDisplay}-${endDisplay} of ${totalItems}`;
     }
 
+    // 6. Render Pagination Buttons
     renderPagination(totalPages);
 }
 
@@ -239,20 +241,26 @@ function renderPagination(totalPages) {
     const paginationContainer = document.getElementById('pagination');
     if (!paginationContainer) return;
 
-    paginationContainer.innerHTML = '';
+    paginationContainer.innerHTML = ''; // Clear old buttons
+
+    // Hide if only 1 page
     if (totalPages <= 1) return;
 
     for (let i = 1; i <= totalPages; i++) {
         const btn = document.createElement('button');
         btn.innerText = i;
+        
         const baseClass = "px-3 py-1 border rounded text-sm transition-colors";
         const activeClass = "bg-indigo-600 text-white border-indigo-600";
         const inactiveClass = "bg-white text-gray-700 hover:bg-gray-50 border-gray-300";
+
         btn.className = `${baseClass} ${i === currentPage ? activeClass : inactiveClass}`;
+        
         btn.onclick = () => {
             currentPage = i;
-            applyFilters();
+            applyFilters(); // Rerender table for specific page
         };
+        
         paginationContainer.appendChild(btn);
     }
 }
@@ -261,6 +269,6 @@ function resetFilters() {
     document.getElementById('search').value = '';
     document.getElementById('filterGender').value = '';
     document.getElementById('filterYear').value = '';
-    currentPage = 1;
+    currentPage = 1; // Reset page
     applyFilters();
 }
