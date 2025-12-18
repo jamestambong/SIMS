@@ -1,72 +1,47 @@
-# Student Information Management System (SIMS)
+# 🎓 SIMS (Student Information Management System)
 
-A modern web application to manage student records with a beautiful Tailwind CSS UI.
+> A modern, premium-styled Student Management System featuring real-time data handling and an integrated AI Assistant powered by Groq (LLaMA 3).
+
+![Project Status](https://img.shields.io/badge/status-active-success.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## ✨ Features
-- 📝 Add, view, and delete students
-- 🔍 Real-time search/filter by name, program, or gender
-- 📄 Pagination with customizable items per page (10, 20, 50, 100)
-- ✅ Input validation
-- 📊 Automatically loads data from CSV file
-- 🎨 Modern, responsive UI with Tailwind CSS
-- 📱 Mobile-friendly design
-- 🎯 Font Awesome icons
 
-## 🎨 UI Design
-- **Tailwind CSS** for modern, utility-first styling
-- **Font Awesome** icons for visual enhancement
-- Gradient backgrounds and smooth animations
-- Responsive design for all screen sizes
-- Professional color-coded badges for gender and programs
+### 🎨 Premium UI/UX
+* **Modern Design:** Clean, "glassmorphism" aesthetic with soft shadows and gradients.
+* **Dynamic Badges:** Color-coded pills for Gender and Year levels (e.g., "1st Year", "2nd Year").
+* **Interactive Elements:** Hover animations on table rows and action buttons.
+* **Responsive:** Fully adaptive layout that works on different screen sizes.
 
-## 🔧 Backend
-- Node.js + Express
-- Data stored in `backend/students.json`
-- CSV import functionality (`students_data_2.0.csv`)
-- API routes:
-  - `GET /students` — fetch all students
-  - `POST /students` — add a student
-  - `DELETE /students/:id` — delete a student
+### 🤖 AI-Powered Assistant
+* **Context-Aware Chat:** The built-in chatbot knows your database! Ask questions like *"How many students are in BSCS?"* or *"Is Bruce Wayne enrolled?"* and get instant answers.
+* **Live Updates:** The AI reads the live table data, so it knows immediately when you add or delete a student.
+* **Powered by Groq:** Uses the `llama-3.3-70b` model for high-accuracy data analysis.
 
-## 🎯 Frontend
-- HTML/CSS/JS with **Tailwind CSS**
-- Form for student input with labels
-- Responsive table with hover effects
-- Advanced pagination with ellipsis
-- Search/filter box with icon
-- Dynamic items-per-page selector
+### 🛠 Core Functionality
+* **CRUD Operations:** Create, Read, Update (Planned), and Delete student records.
+* **Smart Filtering:** Filter by Gender, Year Level, or Search by Name/Program.
+* **Sorting:** Sort records by Name (A-Z) or ID.
+* **Pagination:** Handle large datasets with a clean, numbered pagination system.
+* **Data Validation:** Prevents duplicate IDs and ensures correct data formats.
 
-## 🚀 How to Run
-1. Install dependencies (first time only):
-   ```powershell
-   cd backend
-   npm install express
-   cd ..
-   ```
-2. Start the server:
-   - **Easy way**: Double-click `start-server.bat`
-   - **Terminal way**: 
-     ```powershell
-     cd backend
-     node server.js
-     ```
-3. Open your browser and navigate to: `http://localhost:3000`
-4. The CSV data will be automatically imported on first run!
+---
 
+## 🚀 Tech Stack
 
+* **Frontend:** HTML5, CSS3 (Custom + Tailwind Utility Classes), Vanilla JavaScript (ES6 Modules)
+* **Backend:** Node.js, Express.js
+* **Database:** Supabase (PostgreSQL)
+* **AI Integration:** Groq SDK (`llama-3.3-70b-versatile`)
+* **Icons:** FontAwesome 6
 
-## 📦 Project Structure
-```
-sims/
-├── backend/
-│   ├── server.js          # Express server
-│   └── students.json      # Student database
-├── public/
-│   ├── index.html         # Tailwind UI
-│   ├── script.js          # Frontend logic
-│   └── style.css          # Custom styles
-├── students_data_2.0.csv  # Initial data
-└── README.md
-```
+---
 
+## 🛠️ Installation & Setup
 
+Follow these steps to run the project locally.
+
+### 1. Clone the Repository
+```bash
+git clone [https://github.com/yourusername/sims-project.git](https://github.com/yourusername/sims-project.git)
+cd sims-project

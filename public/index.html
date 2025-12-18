@@ -3,306 +3,191 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Information Management System</title>
+  <title>SIMS | Student Management</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-  <!-- Notification Toast -->
-  <div id="notification" class="fixed top-4 right-4 z-50 transform translate-x-full transition-transform duration-300 ease-in-out">
-    <div id="notificationCard" class="bg-white rounded-lg shadow-xl border-l-4 p-4 max-w-md">
-      <div class="flex items-start">
-        <div class="flex-shrink-0">
-          <i id="notificationIcon" class="text-2xl"></i>
-        </div>
-        <div class="ml-3 flex-1">
-          <p id="notificationTitle" class="text-sm font-medium text-gray-900"></p>
-          <p id="notificationMessage" class="mt-1 text-sm text-gray-500"></p>
-        </div>
-        <button onclick="hideNotification()" class="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-500 focus:outline-none">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+<body>
+
+  <div id="notification" class="toast">
+    <div class="toast-icon"><i id="notificationIcon" class="fas fa-check-circle fa-lg"></i></div>
+    <div class="toast-content">
+      <div id="notificationTitle" style="font-weight: 600;">Success</div>
+      <div id="notificationMessage" style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;"></div>
     </div>
   </div>
 
-  <!-- Delete Confirmation Modal -->
-  <div id="deleteModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Background overlay -->
-      <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="hideDeleteModal()"></div>
-
-      <!-- Center modal -->
-      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-      <!-- Modal panel -->
-      <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-        <div class="bg-gradient-to-br from-red-50 to-orange-50 px-6 pt-6 pb-4">
-          <div class="sm:flex sm:items-start">
-            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-16 w-16 rounded-full bg-red-100 sm:mx-0 sm:h-12 sm:w-12 shadow-lg">
-              <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-            </div>
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-              <h3 class="text-2xl leading-6 font-bold text-gray-900" id="modal-title">
-                Confirm Deletion
-              </h3>
-              <div class="mt-3">
-                <p class="text-sm text-gray-600 leading-relaxed">
-                  Are you sure you want to permanently delete this student record?
-                </p>
-                <div class="mt-4 bg-white rounded-lg p-4 border-l-4 border-red-500 shadow-sm">
-                  <p class="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-1">Student Details</p>
-                  <p class="text-sm font-bold text-gray-900" id="deleteStudentName"></p>
-                  <p class="text-xs text-gray-600 mt-1" id="deleteStudentId"></p>
-                </div>
-                <p class="text-xs text-red-600 mt-3 flex items-center">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  This action cannot be undone and will permanently remove all records.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse gap-3">
-          <button type="button" id="confirmDelete"
-            class="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-base font-medium text-white hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:w-auto sm:text-sm transition-all transform hover:scale-105">
-            <i class="fas fa-trash-alt mr-2"></i>
-            Delete Student
-          </button>
-          <button type="button" onclick="hideDeleteModal()"
-            class="mt-3 w-full inline-flex justify-center items-center rounded-lg border border-gray-300 shadow-sm px-6 py-3 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm transition-all">
-            <i class="fas fa-times mr-2"></i>
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Header -->
-  <header class="bg-white shadow-md">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="bg-indigo-600 p-3 rounded-lg">
-            <i class="fas fa-graduation-cap text-white text-2xl"></i>
+  <div id="deleteModalBackdrop" class="modal-backdrop"></div>
+  <div id="deleteModal" class="modal-container">
+    <div class="modal-panel">
+      <div style="background: linear-gradient(to right bottom, #fef2f2, #fff7ed); padding: 1.5rem;">
+        <div style="display: flex; gap: 1rem;">
+          <div style="background: #fee2e2; padding: 0.75rem; border-radius: 50%; height: fit-content;">
+            <i class="fas fa-exclamation-triangle" style="color: #dc2626; font-size: 1.5rem;"></i>
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-gray-900">SIMS</h1>
-            <p class="text-sm text-gray-500">Student Information Management System</p>
+            <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0 0 0.5rem 0;">Confirm Deletion</h3>
+            <p style="color: #4b5563; font-size: 0.875rem; margin: 0;">Are you sure you want to permanently delete this student record?</p>
+            <div style="background: white; padding: 1rem; border-radius: 0.5rem; border-left: 4px solid #ef4444; margin-top: 1rem;">
+              <div style="font-size: 0.75rem; text-transform: uppercase; color: #6b7280; font-weight: 600;">Student Details</div>
+              <div id="deleteStudentName" style="font-weight: 700; color: #111827;"></div>
+              <div id="deleteStudentId" style="font-size: 0.875rem; color: #4b5563;"></div>
+            </div>
           </div>
         </div>
-        <div class="flex items-center space-x-4">
-          <span class="text-sm text-gray-600">Total Students: <span id="totalCount" class="font-bold text-indigo-600">0</span></span>
+      </div>
+      <div style="background: #f9fafb; padding: 1rem 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button onclick="window.hideDeleteModal()" class="btn btn-secondary">Cancel</button>
+        <button id="confirmDelete" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Delete Student</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="app-header" style="margin-bottom: 2rem; background: white; border-bottom: 1px solid #e5e7eb; padding: 1.25rem 0;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      
+      <div class="logo-area" style="display: flex; align-items: center; gap: 1rem;">
+        <div style="
+          width: 55px; height: 55px; 
+          background: linear-gradient(135deg, #4f46e5, #818cf8); 
+          border-radius: 12px; 
+          display: flex; align-items: center; justify-content: center;
+          color: white; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+          font-size: 1.5rem; /* Bigger Icon inside */
+        ">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; justify-content: center;">
+          <h1 style="
+            font-size: 1.8rem; /* Much Bigger Title */
+            font-weight: 800; 
+            color: #1f2937; 
+            line-height: 1; 
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+          ">SIMS</h1>
+          <div style="
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            color: #6b7280; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+          ">Admin Dashboard</div>
         </div>
       </div>
+
+      <div style="background: #f9fafb; padding: 0.5rem 1.25rem; border-radius: 50px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: #6b7280; text-transform: uppercase;">Total Students</span>
+        <span id="totalCount" style="background: #eef2ff; color: #4f46e5; padding: 2px 10px; border-radius: 20px; font-weight: 700; font-size: 1rem;">0</span>
+      </div>
+
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Add Student Form Card -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <div class="flex items-center mb-6">
-        <i class="fas fa-user-plus text-indigo-600 text-xl mr-3"></i>
-        <h2 class="text-2xl font-bold text-gray-800">Add New Student</h2>
+  <main class="container main-content">
+    <div class="card">
+      <div class="card-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #f3f4f6;">
+        <div style="background: #e0e7ff; color: #4f46e5; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h2 style="font-size: 1.1rem; font-weight: 700; color: #1f2937; margin: 0;">Add New Student</h2>
       </div>
       <form id="studentForm">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-            <input type="text" id="id" placeholder="e.g., 2021-0001" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
-            <input type="text" id="name" placeholder="Juan Dela Cruz" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-3">Gender</label>
-            <div class="flex items-center space-x-6">
-              <label class="inline-flex items-center cursor-pointer group">
-                <input type="radio" name="gender" value="Male" required
-                  class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                <span class="ml-2 flex items-center text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">
-                  <i class="fas fa-mars text-blue-600 mr-1.5"></i>
-                  Male
-                </span>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Student ID</label><input type="text" id="id" class="form-control" placeholder="e.g., 2021-0001" required></div>
+          <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="name" class="form-control" placeholder="Juan Dela Cruz" required></div>
+          <div class="form-group">
+            <label class="form-label">Gender</label>
+            <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="gender" value="Male" required> <span style="color: #4b5563;"><i class="fas fa-mars" style="color: #2563eb;"></i> Male</span>
               </label>
-              <label class="inline-flex items-center cursor-pointer group">
-                <input type="radio" name="gender" value="Female" required
-                  class="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-2 focus:ring-indigo-500 cursor-pointer">
-                <span class="ml-2 flex items-center text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">
-                  <i class="fas fa-venus text-rose-600 mr-1.5"></i>
-                  Female
-                </span>
+              <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="radio" name="gender" value="Female" required> <span style="color: #4b5563;"><i class="fas fa-venus" style="color: #e11d48;"></i> Female</span>
               </label>
             </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Gmail</label>
-            <input type="email" id="gmail" placeholder="juan.delacruz@gmail.com" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Program</label>
-            <input type="text" id="program" placeholder="BSCS" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
-            <input type="number" id="year" placeholder="1-6" min="1" max="6" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
-          <div class="lg:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">University</label>
-            <input type="text" id="university" placeholder="University Name" required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
+          <div class="form-group"><label class="form-label">Email Address</label><input type="email" id="gmail" class="form-control" placeholder="juan@gmail.com" required></div>
+          <div class="form-group"><label class="form-label">Program</label><input type="text" id="program" class="form-control" placeholder="BSCS" required></div>
+          <div class="form-group"><label class="form-label">Year Level</label><input type="number" id="year" class="form-control" placeholder="1-6" min="1" max="6" required></div>
+          <div class="form-group span-2"><label class="form-label">University</label><input type="text" id="university" class="form-control" placeholder="University Name" required></div>
         </div>
-        <button type="submit" 
-          class="mt-6 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center space-x-2 font-medium">
-          <i class="fas fa-plus-circle"></i>
-          <span>Add Student</span>
-        </button>
+        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;"><i class="fas fa-plus-circle"></i> Add Student</button>
       </form>
     </div>
 
-    <!-- Search & Filter Card -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Search Box -->
-        <div class="lg:col-span-2">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-search mr-1"></i> Search Students
-          </label>
-          <div class="relative">
-            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="search" placeholder="Search by name, program, or gender..."
-              class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-          </div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-group span-2">
+          <label class="form-label"><i class="fas fa-search"></i> Search</label>
+          <input type="text" id="search" class="form-control" placeholder="Search by name, program...">
         </div>
-        
-        <!-- Filter by Gender -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-filter mr-1"></i> Filter by Gender
-          </label>
-          <select id="filterGender"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-            <option value="">All Genders</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select id="filterGender" class="form-control"><option value="">All Genders</option><option value="Male">Male</option><option value="Female">Female</option></select>
         </div>
-
-        <!-- Filter by Year Level -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-graduation-cap mr-1"></i> Filter by Year
-          </label>
-          <select id="filterYear"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-            <option value="">All Years</option>
-            <option value="1">1st Year</option>
-            <option value="2">2nd Year</option>
-            <option value="3">3rd Year</option>
-            <option value="4">4th Year</option>
-            <option value="5">5th Year</option>
-            <option value="6">6th Year</option>
-          </select>
+        <div class="form-group">
+          <label class="form-label">Year</label>
+          <select id="filterYear" class="form-control"><option value="">All Years</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option><option value="5">5th Year</option><option value="6">6th Year</option></select>
         </div>
-
-        <!-- Sort By -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-sort mr-1"></i> Sort By
-          </label>
-          <select id="sortBy"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-            <option value="id-asc">ID (A-Z)</option>
-            <option value="id-desc">ID (Z-A)</option>
-            <option value="name-asc" selected>Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="year-asc">Year (Low-High)</option>
-            <option value="year-desc">Year (High-Low)</option>
-          </select>
+        <div class="form-group">
+          <label class="form-label">Sort By</label>
+          <select id="sortBy" class="form-control"><option value="name-asc">Name (A-Z)</option><option value="name-desc">Name (Z-A)</option><option value="id-asc">ID (Asc)</option><option value="id-desc">ID (Desc)</option></select>
         </div>
-
-        <!-- Items per page -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-list mr-1"></i> Items per page
-          </label>
-          <select id="itemsPerPage"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
-            <option value="10">10</option>
-            <option value="20" selected>20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
+        <div class="form-group">
+          <label class="form-label">Rows</label>
+          <select id="itemsPerPage" class="form-control"><option value="10">10</option><option value="20" selected>20</option><option value="50">50</option></select>
         </div>
-
-        <!-- Reset Filters Button -->
-        <div class="flex items-end">
-          <button id="resetFilters" 
-            class="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center space-x-2 font-medium border border-gray-300">
-            <i class="fas fa-redo"></i>
-            <span>Reset</span>
-          </button>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+          <button id="resetFilters" class="btn btn-secondary" style="width: 100%;"><i class="fas fa-redo"></i> Reset</button>
         </div>
       </div>
     </div>
 
-    <!-- Students Table Card -->
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200" id="studentsTable">
-          <thead class="bg-gradient-to-r from-indigo-600 to-indigo-700">
-            <tr>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">ID</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Name</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Gender</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Gmail</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Program</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Year</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">University</th>
-              <th class="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">Action</th>
-            </tr>
+    <div class="card" style="padding: 0; overflow: hidden; border: none;">
+      <div class="table-container">
+        <table class="data-table" id="studentsTable">
+          <thead>
+            <tr><th>ID</th><th>Name</th><th>Gender</th><th>Gmail</th><th>Program</th><th>Year</th><th>University</th><th>Actions</th></tr>
           </thead>
-          <tbody class="bg-white divide-y divide-gray-200"></tbody>
+          <tbody></tbody>
         </table>
       </div>
-      
-      <!-- Pagination -->
-      <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button id="prevPageMobile"
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Previous
-          </button>
-          <button id="nextPageMobile"
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Next
-          </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm text-gray-700">
-              Showing <span id="pageInfo" class="font-medium">1-20 of 100</span> students
-            </p>
-          </div>
-          <div>
-            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" id="pagination">
-              <!-- Pagination buttons will be inserted here -->
-            </nav>
-          </div>
-        </div>
+      <div class="pagination-bar" style="padding: 1rem; border-top: 1px solid #f3f4f6; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
+        <div style="font-size: 0.875rem; color: #6b7280;">Showing <span id="pageInfo" style="font-weight: 700; color: #111827;">0-0</span> students</div>
+        <div id="pagination" style="display: flex; gap: 0.5rem;"></div>
       </div>
     </div>
   </main>
 
-  <script src="script.js"></script>
+  <div class="chat-widget">
+    <div id="chat-window" class="chat-window hidden">
+      <div class="chat-header">
+        <span><i class="fas fa-robot"></i> AI Assistant</span>
+        <span id="close-chat" style="cursor:pointer;"><i class="fas fa-times"></i></span>
+      </div>
+      <div id="chat-messages" class="chat-body">
+        <div class="chat-bubble chat-bot">Hello! Ask me anything!</div>
+      </div>
+      <div class="chat-footer">
+        <input type="text" id="chat-input" class="chat-input" placeholder="Type a question...">
+        <button id="send-chat" class="chat-send"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+    <button id="toggle-chat" class="chat-toggle"><i class="fas fa-comment-dots"></i></button>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
