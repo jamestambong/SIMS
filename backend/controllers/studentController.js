@@ -53,6 +53,34 @@ exports.addStudent = async (req, res) => {
     }
 };
 
+// Update a student
+exports.updateStudent = async (req, res) => {
+    if (!supabase) return res.status(500).json({ error: 'Database not connected.' });
+    
+    const { id } = req.params;
+    const updates = req.body;
+
+    try {
+        const { data, error } = await supabase
+            .from('student')
+            .update(updates)
+            .eq('id', id)
+            .select();
+
+        if (error) throw error;
+        
+        // If no data returned, the ID didn't match
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'Student not found.' });
+        }
+
+        res.json(data[0]); 
+    } catch (error) {
+        console.error("Update Error:", error);
+        res.status(500).json({ error: 'Failed to update student' });
+    }
+};
+
 // Delete a student
 exports.deleteStudent = async (req, res) => {
     if (!supabase) return res.status(500).json({ error: 'Database not connected.' });

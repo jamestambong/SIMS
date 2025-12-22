@@ -2,7 +2,6 @@ export const API = {
     // 1. Fetch Students
     async fetchStudents() {
         try {
-            // Notice the change: /api/students
             const res = await fetch('/api/students');
             if (!res.ok) throw new Error(`Server Error: ${res.status}`);
             return await res.json();
@@ -22,6 +21,17 @@ export const API = {
         return await res.json();
     },
 
+    // ADD THIS NEW FUNCTION
+    async updateStudent(id, updates) {
+        const res = await fetch(`/api/students/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates)
+        });
+        if (!res.ok) throw new Error(`Error: ${res.status}`);
+        return await res.json();
+    },
+
     // 3. Delete Student
     async deleteStudent(id) {
         const res = await fetch(`/api/students/${id}`, { method: 'DELETE' });
@@ -31,8 +41,6 @@ export const API = {
 
     // 4. Chatbot
     async sendChatMessage(prompt) {
-        // Notice the change: /api/chat
-        // Also: changed 'message' to 'prompt' to match what your app.js sends
         const res = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

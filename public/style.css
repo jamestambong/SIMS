@@ -110,3 +110,23 @@ body {
 /* TOAST */
 .toast { position: fixed; top: 24px; right: 24px; background: white; padding: 1rem 1.5rem; border-radius: 12px; border-left: 5px solid var(--primary); box-shadow: 0 20px 25px rgba(0,0,0,0.1); display: flex; gap: 1rem; transform: translateX(150%); transition: transform 0.3s; z-index: 300; }
 .toast.show { transform: translateX(0); }
+
+
+.btn-icon-edit {
+    width: 36px; 
+    height: 36px; 
+    border-radius: 8px; 
+    border: none; 
+    background: #e0e7ff; 
+    color: #4f46e5; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+    background: #c7d2fe;
+    transform: scale(1.1);
+}

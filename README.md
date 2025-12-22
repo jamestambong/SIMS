@@ -16,10 +16,10 @@
 ### 🤖 AI-Powered Assistant
 * **Context-Aware Chat:** The built-in chatbot knows your database! Ask questions like *"How many students are in BSCS?"* or *"Is Bruce Wayne enrolled?"* and get instant answers.
 * **Live Updates:** The AI reads the live table data, so it knows immediately when you add or delete a student.
-* **Powered by Groq:** Uses the `llama-3.3-70b` model for high-accuracy data analysis.
+* **Powered by Gemini 3:** Uses the `gemini-3-flash-preview` model for high-accuracy data analysis.
 
 ### 🛠 Core Functionality
-* **CRUD Operations:** Create, Read, Update (Planned), and Delete student records.
+* **CRUD Operations:** Create, Read, Update, and Delete student records.
 * **Smart Filtering:** Filter by Gender, Year Level, or Search by Name/Program.
 * **Sorting:** Sort records by Name (A-Z) or ID.
 * **Pagination:** Handle large datasets with a clean, numbered pagination system.

@@ -1,18 +1,22 @@
 import { API } from './api.js';
 import { UI } from './ui.js';
 
-console.log("🚀 App.js is starting NOW!"); 
+console.log("App.js is starting NOW!"); 
 
 let allStudents = [];
 let studentToDelete = null;
 let currentPage = 1;
+
+// --- STATE FOR EDITING ---
+let isEditing = false;
+let editId = null;
 
 loadStudents();
 setupEventListeners();
 
 // --- Core Logic ---
 async function loadStudents() {
-    console.log("🔄 Fetching student data...");
+    console.log("Fetching student data...");
     allStudents = await API.fetchStudents();
     
     if(UI.elements.totalCount) UI.elements.totalCount.textContent = allStudents.length;
@@ -22,13 +26,32 @@ async function loadStudents() {
 function setupEventListeners() {
     console.log("👂 Attaching event listeners...");
     
-    // 1. Form Submit
+    // 1. Form Submit (Handles both ADD and UPDATE)
     const form = document.getElementById('studentForm');
     if (form) {
-        form.addEventListener('submit', handleAddStudent);
+        form.addEventListener('submit', handleFormSubmit);
     }
 
-    // 2. Chat Buttons
+    // 2. Table Actions (Delegation for Edit & Delete)
+    document.querySelector('#studentsTable tbody').addEventListener('click', (e) => {
+        // DELETE BUTTON CLICKED
+        const deleteBtn = e.target.closest('.btn-icon-delete');
+        if (deleteBtn) {
+            const id = deleteBtn.getAttribute('data-id');
+            studentToDelete = allStudents.find(s => s.id === id);
+            if (studentToDelete) UI.toggleModal(true, studentToDelete);
+        }
+
+        // EDIT BUTTON CLICKED (NEW)
+        const editBtn = e.target.closest('.btn-icon-edit');
+        if (editBtn) {
+            const id = editBtn.getAttribute('data-id');
+            const student = allStudents.find(s => s.id === id);
+            if (student) populateForm(student);
+        }
+    });
+
+    // 3. Chat Buttons
     const toggleChat = document.getElementById('toggle-chat');
     const closeChat = document.getElementById('close-chat');
     const chatWindow = document.getElementById('chat-window');
@@ -45,7 +68,7 @@ function setupEventListeners() {
         });
     }
 
-    // 3. Filters
+    // 4. Filters
     document.getElementById('resetFilters').addEventListener('click', () => {
         currentPage = 1; 
         resetFilters();
@@ -55,17 +78,17 @@ function setupEventListeners() {
         const el = document.getElementById(id);
         if(el) {
             el.addEventListener('input', () => {
-                currentPage = 1; // Reset to page 1 on search
+                currentPage = 1; 
                 applyFilters();
             });
             el.addEventListener('change', () => {
-                currentPage = 1; // Reset to page 1 on sort/filter change
+                currentPage = 1; 
                 applyFilters();
             });
         }
     });
 
-    // 4. Chat Input
+    // 5. Chat Input
     const chatInput = document.getElementById('chat-input');
     const sendBtn = document.getElementById('send-chat');
     if (chatInput && sendBtn) {
@@ -73,29 +96,60 @@ function setupEventListeners() {
         chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleChat(); });
     }
 
-    // 5. Modal & Delete Actions
+    // 6. Modal & Delete Actions
     document.getElementById('confirmDelete').addEventListener('click', handleConfirmDelete);
     
     window.hideDeleteModal = () => UI.toggleModal(false);
     window.hideNotification = () => UI.hideNotification();
-
-    document.querySelector('#studentsTable tbody').addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-icon-delete');
-        if (btn) {
-            const id = btn.getAttribute('data-id');
-            studentToDelete = allStudents.find(s => s.id === id);
-            if (studentToDelete) UI.toggleModal(true, studentToDelete);
-        }
-    });
 }
 
-// --- Handlers ---
-async function handleAddStudent(e) {
+// --- NEW FUNCTION: POPULATE FORM ---
+function populateForm(student) {
+    const form = document.getElementById('studentForm');
+    
+    // Fill the inputs
+    form.id.value = student.id;
+    form.name.value = student.name;
+    form.gmail.value = student.gmail;
+    form.program.value = student.program;
+    form.year.value = student.year;
+    form.university.value = student.university;
+    
+    // Handle Gender Radio Buttons
+    const genderRadios = document.getElementsByName('gender');
+    for (const radio of genderRadios) {
+        if (radio.value === student.gender) {
+            radio.checked = true;
+        }
+    }
+
+    // Set Editing State
+    isEditing = true;
+    editId = student.id;
+
+    // Change Button Appearance
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Student';
+    submitBtn.classList.remove('btn-primary');
+    submitBtn.classList.add('btn-success'); // Assuming you might add this class, or we use inline style below
+    submitBtn.style.backgroundColor = '#10b981';
+    
+    // Disable ID field (ID cannot be changed)
+    form.id.disabled = true;
+
+    // Smooth scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// --- HANDLERS ---
+
+async function handleFormSubmit(e) {
     e.preventDefault();
     const form = e.target;
     const genderRadio = document.querySelector('input[name="gender"]:checked');
+    const submitBtn = form.querySelector('button[type="submit"]');
     
-    const newStudent = {
+    const studentData = {
         id: form.id.value.trim(),
         name: form.name.value.trim(),
         gender: genderRadio ? genderRadio.value : '',
@@ -105,14 +159,34 @@ async function handleAddStudent(e) {
         university: form.university.value.trim()
     };
 
-    const res = await API.addStudent(newStudent);
-    
-    if (res.error) {
-        UI.showNotification('Error', res.error, 'error');
-    } else {
-        UI.showNotification('Success', 'Student added successfully.', 'success');
+    try {
+        if (isEditing) {
+            // --- UPDATE EXISTING STUDENT ---
+            await API.updateStudent(editId, studentData);
+            UI.showNotification('Success', 'Student updated successfully.', 'success');
+            
+            // Reset Edit Mode
+            isEditing = false;
+            editId = null;
+            submitBtn.innerHTML = '<i class="fas fa-plus-circle"></i> Add Student';
+            submitBtn.classList.add('btn-primary');
+            submitBtn.classList.remove('btn-success');
+            submitBtn.style.backgroundColor = ''; // Reset to default CSS
+            form.id.disabled = false; // Re-enable ID
+        } else {
+            // --- ADD NEW STUDENT ---
+            const res = await API.addStudent(studentData);
+            if (res.error) {
+                UI.showNotification('Error', res.error, 'error');
+            } else {
+                UI.showNotification('Success', 'Student added successfully.', 'success');
+            }
+        }
+
         form.reset();
-        loadStudents();
+        loadStudents(); // Refresh table
+    } catch (err) {
+        UI.showNotification('Error', err.message || err.error, 'error');
     }
 }
 
@@ -167,8 +241,7 @@ async function handleChat() {
       [INSTRUCTIONS]
       - The data above is the COMPLETE list of students.
       - Read every single line carefully.
-      - If asking for a specific student (like "Imee"), find their numbered row and recite the details.
-      - Do not summarize unless asked. Be precise.
+      - If asking for a specific student, find their numbered row and recite details.
     `;
     
     try {
@@ -176,11 +249,12 @@ async function handleChat() {
         UI.addChatMessage(data.reply, 'bot');
     } catch (err) {
         console.error(err);
-        UI.addChatMessage("⚠️ Rate Limit Hit. (Tip: Create a new API Key to fix this immediately)", 'bot');
+        UI.addChatMessage("⚠️ Rate Limit Hit or Server Error.", 'bot');
     }
 }
 
-// --- Filter & Pagination Logic
+// --- Filter & Pagination Logic ---
+
 function applyFilters() {
     const search = document.getElementById('search').value.toLowerCase();
     const gender = document.getElementById('filterGender').value;
@@ -250,11 +324,15 @@ function renderPagination(totalPages) {
         const btn = document.createElement('button');
         btn.innerText = i;
         
-        const baseClass = "px-3 py-1 border rounded text-sm transition-colors";
-        const activeClass = "bg-indigo-600 text-white border-indigo-600";
-        const inactiveClass = "bg-white text-gray-700 hover:bg-gray-50 border-gray-300";
-
-        btn.className = `${baseClass} ${i === currentPage ? activeClass : inactiveClass}`;
+        // Simple Tailwind classes logic for visual state
+        if (i === currentPage) {
+            btn.className = "bg-indigo-600 text-white";
+            btn.style.backgroundColor = "#4f46e5";
+            btn.style.color = "white";
+            btn.style.borderColor = "#4f46e5";
+        } else {
+            btn.className = "bg-white text-gray-700";
+        }
         
         btn.onclick = () => {
             currentPage = i;

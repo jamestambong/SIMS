@@ -58,13 +58,19 @@ export const UI = {
                 </td>
                 <td style="color: #4b5563; font-size: 0.85rem;">${student.university}</td>
                 <td>
-                    <button class="btn-icon-delete" data-id="${student.id}" 
-                        style="width: 36px; height: 36px; border-radius: 8px; border: none; background: #fef2f2; color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
-                        onmouseover="this.style.background='#fee2e2'; this.style.transform='scale(1.1)'"
-                        onmouseout="this.style.background='#fef2f2'; this.style.transform='scale(1)'"
-                    >
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-icon-edit" data-id="${student.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        
+                        <button class="btn-icon-delete" data-id="${student.id}" 
+                            style="width: 36px; height: 36px; border-radius: 8px; border: none; background: #fef2f2; color: #ef4444; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                            onmouseover="this.style.background='#fee2e2'; this.style.transform='scale(1.1)'"
+                            onmouseout="this.style.background='#fef2f2'; this.style.transform='scale(1)'"
+                        >
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </td>
             `;
             this.elements.tableBody.appendChild(row);
